@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Fórmula Perdida · Escape Room</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Courier+Prime:wght@400;700&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080810;
+  --surface: #0f0f1e;
+  --card: #141428;
+  --card2: #1a1a30;
+  --gold: #c9a84c;
+  --gold-l: #e8c97a;
+  --gold-d: #8a6a20;
+  --cream: #f0e4c0;
+  --burg: #7b1e2e;
+  --text: #c8b890;
+  --muted: #6a5a40;
+  --border: rgba(201,168,76,.25);
+  --green: #2d6b2d;
+  --green-l: #88cc88;
+  --red-l: #ef9a9a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Courier Prime',monospace;overflow-x:hidden}
+body{background-image:radial-gradient(ellipse at 15% 15%,rgba(201,168,76,.04) 0,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(123,30,46,.07) 0,transparent 55%)}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--gold)}
+
+/* TIMER BAR */
+#timerBar{display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:var(--surface);border-bottom:1px solid var(--border);padding:10px 24px;align-items:center;justify-content:space-between}
+#timerBar.on{display:flex}
+#timerNum{font-size:1.5rem;color:var(--gold);letter-spacing:3px}
+#timerNum.urgent{color:#ff5555;animation:blink .5s ease infinite alternate}
+@keyframes blink{from{opacity:1}to{opacity:.4}}
+.timer-label{font-size:.65rem;letter-spacing:4px;color:var(--muted);text-transform:uppercase}
+
+/* SCREENS */
+.scr{display:none;min-height:100vh;padding:20px;align-items:center;justify-content:center;flex-direction:column}
+.scr.on{display:flex}
+
+/* DECORATION */
+.deco-box{position:relative;background:var(--card);border:1px solid var(--border);padding:44px 36px}
+.deco-box::before,.deco-box::after{content:'';position:absolute;width:24px;height:24px;border-color:var(--gold);border-style:solid}
+.deco-box::before{top:8px;left:8px;border-width:2px 0 0 2px}
+.deco-box::after{bottom:8px;right:8px;border-width:0 2px 2px 0}
+.divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:20px 0}
+
+/* TYPOGRAPHY */
+.t-title{font-family:'Cinzel',serif;color:var(--gold);letter-spacing:4px;text-transform:uppercase}
+.t-sub{font-family:'Playfair Display',serif;font-style:italic;color:var(--muted)}
+.t-prose{font-family:'Playfair Display',serif;line-height:1.85}
+.t-mono{font-family:'Courier Prime',monospace}
+.gold{color:var(--gold)}
+.cream{color:var(--cream)}
+
+/* INPUTS & BUTTONS */
+input[type=text],input[type=number]{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--cream);font-family:'Courier Prime',monospace;font-size:1rem;padding:12px 16px;outline:none;transition:border-color .3s}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--gold)}
+input.ok{border-color:#4caf50!important;color:#88ff88!important}
+input.bad{border-color:#f44336!important;animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+.btn{display:inline-block;background:transparent;border:1px solid var(--gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:3px;padding:13px 28px;cursor:pointer;text-transform:uppercase;transition:all .3s}
+.btn:hover{background:var(--gold);color:var(--bg)}
+.btn-sm{padding:8px 16px;font-size:.75rem;letter-spacing:2px}
+.btn-ghost{border-color:var(--muted);color:var(--muted)}
+.btn-ghost:hover{background:var(--muted);color:var(--bg)}
+.btn-danger{border-color:var(--burg);color:#e87878}
+.btn-danger:hover{background:var(--burg);color:var(--cream)}
+.btn-block{width:100%;display:block;text-align:center;margin-top:12px}
+
+/* PROGRESS DOTS */
+.progress{display:flex;gap:10px;justify-content:center;margin-bottom:28px}
+.pdot{width:10px;height:10px;border-radius:50%;border:1px solid var(--muted);background:transparent;transition:all .4s}
+.pdot.done{background:var(--gold);border-color:var(--gold)}
+.pdot.cur{border-color:var(--gold);box-shadow:0 0 8px var(--gold)}
+
+/* PHASE LAYOUT */
+.phase-wrap{width:100%;max-width:820px;padding-top:68px;padding-bottom:30px}
+.phase-head{text-align:center;margin-bottom:24px}
+.phase-num{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:6px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.phase-name{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--gold)}
+
+/* SCENE */
+.scene{background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:16px;border-radius:2px}
+.scene-desc{font-family:'Playfair Display',serif;font-style:italic;color:var(--muted);font-size:.95rem;line-height:1.65;margin-bottom:20px}
+
+/* OBJECT GRID */
+.obj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px;margin-bottom:16px}
+.obj{background:var(--card2);border:1px solid var(--border);padding:18px 12px;text-align:center;cursor:pointer;transition:all .3s;border-radius:2px}
+.obj:hover{border-color:var(--gold);transform:translateY(-3px);box-shadow:0 6px 24px rgba(201,168,76,.12)}
+.obj.seen{border-color:rgba(201,168,76,.5);background:rgba(201,168,76,.05)}
+.obj .icon{font-size:1.8rem;display:block;margin-bottom:8px}
+.obj .label{font-size:.7rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.obj.seen .label{color:var(--gold-l)}
+
+/* PUZZLE BOX */
+.puzzle{background:rgba(0,0,0,.25);border:1px solid var(--border);border-top:2px solid var(--gold);padding:22px;margin-bottom:14px}
+.puzzle-title{font-family:'Cinzel',serif;color:var(--gold);font-size:.8rem;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
+.puzzle-q{font-family:'Playfair Display',serif;font-size:1rem;line-height:1.7;color:var(--cream);margin-bottom:18px}
+.code-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.code-row input{max-width:160px;font-size:1.4rem;text-align:center;letter-spacing:6px}
+.err{color:#ff6b6b;font-size:.8rem;margin-top:8px;display:none}
+
+/* HINTS */
+.hint-wrap{margin-top:12px}
+.hint-item{background:rgba(201,168,76,.05);border-left:3px solid var(--gold);padding:10px 14px;margin-bottom:8px;font-size:.85rem;line-height:1.5;animation:fadeSlide .4s ease}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+.hint-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hint-count{font-size:.75rem;color:var(--muted)}
+
+/* PHASE 3 CARDS */
+.inv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:14px}
+.inv-card{background:var(--card2);border:1px solid var(--border);padding:14px;border-radius:2px;transition:all .3s}
+.inv-card .inv-name{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);letter-spacing:1px;margin-bottom:6px}
+.inv-card .inv-desc{font-size:.78rem;line-height:1.5;color:var(--muted);margin-bottom:8px}
+.inv-card .inv-code{display:inline-block;font-size:.7rem;padding:2px 8px;background:rgba(201,168,76,.08);border:1px solid var(--border);color:var(--gold);margin-bottom:10px}
+.inv-card .inv-btns{display:flex;gap:6px}
+.inv-card .inv-btns button{flex:1;font-size:.7rem;padding:6px 4px;cursor:pointer;border-radius:1px;font-family:'Cinzel',serif;letter-spacing:1px;background:transparent;border:1px solid var(--border);color:var(--muted);transition:all .25s}
+.inv-card .inv-btns button:hover{border-color:var(--gold);color:var(--gold)}
+.inv-card.sel-ok{border-color:#4caf50;background:rgba(76,175,80,.07)}
+.inv-card.sel-bad{border-color:#f44336;background:rgba(244,67,54,.07);animation:shake .4s ease}
+
+.order-box{background:rgba(0,0,0,.2);border:1px solid var(--border);padding:14px;margin-bottom:16px;font-size:.85rem}
+.order-label{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:3px;color:var(--muted);margin-bottom:8px}
+
+/* PHASE 4 CALC */
+.calc-wrap{background:#080f08;border:1px solid var(--green);padding:14px;max-width:230px;margin:0 auto 16px}
+.calc-screen{background:#0f200f;border:1px solid rgba(45,107,45,.5);padding:10px 14px;text-align:right;font-size:1.3rem;color:#88ff88;min-height:46px;word-break:break-all;margin-bottom:10px;font-family:'Courier Prime',monospace}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.cbt{background:#0f200f;border:1px solid rgba(45,107,45,.4);color:#88ff88;font-family:'Courier Prime',monospace;font-size:.9rem;padding:9px;cursor:pointer;transition:background .2s;text-align:center}
+.cbt:hover{background:#1a3a1a}
+.cbt.op{color:var(--gold)}
+.cbt.eq{background:var(--green);color:var(--cream)}
+.cbt.eq:hover{background:#3d8b3d}
+.cbt.cl{color:#ff8888}
+
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:800;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--gold);max-width:480px;width:100%;max-height:85vh;overflow-y:auto;padding:28px;position:relative;animation:pop .3s ease}
+@keyframes pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-x{position:absolute;top:10px;right:14px;background:none;border:none;color:var(--gold);font-size:1.3rem;cursor:pointer;line-height:1}
+.modal-title{font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;letter-spacing:2px;margin-bottom:14px;padding-right:20px}
+
+/* FLIP CARD GENERIC */
+.flip-host{perspective:900px;cursor:pointer}
+.flip-inner{position:relative;transition:transform .7s;transform-style:preserve-3d}
+.flip-inner.flipped{transform:rotateY(180deg)}
+.flip-face{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flip-back{transform:rotateY(180deg)}
+
+/* VICTORY */
+.vict-box{background:var(--card);border:2px solid var(--gold);padding:48px 36px;max-width:540px;width:100%;text-align:center;position:relative}
+.vict-box::before,.vict-box::after{content:'✦';color:var(--gold);position:absolute;font-size:1.2rem}
+.vict-box::before{top:14px;left:14px}
+.vict-box::after{bottom:14px;right:14px}
+.formula-big{background:rgba(201,168,76,.06);border:1px solid var(--gold);padding:20px;margin:20px 0;font-size:1.6rem;letter-spacing:4px;color:var(--gold-l);font-family:'Courier Prime',monospace}
+.result-card{background:rgba(0,0,0,.3);border:1px solid var(--border);padding:18px;text-align:left;margin:16px 0}
+.result-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.9rem}
+.result-row:last-child{border-bottom:none}
+.rl{color:var(--muted)}.rv{color:var(--cream);font-weight:700}
+
+/* GAMEOVER */
+.go-box{background:var(--card);border:1px solid var(--burg);padding:48px 36px;max-width:480px;width:100%;text-align:center}
+
+/* PAPER STYLE */
+.paper{background:#f5ead0;color:#1a0a00;padding:20px;font-family:'Playfair Display',serif;font-size:.9rem;line-height:1.75;border:1px solid #c9a84c}
+.paper-mono{font-family:'Courier Prime',monospace;font-size:.85rem}
+.paper th{background:#c9a84c;padding:6px 10px;text-align:left;font-size:.72rem;letter-spacing:1px}
+.paper td{padding:5px 10px;border-bottom:1px solid rgba(0,0,0,.08)}
+.paper tr.total td{border-top:1px solid #c9a84c;font-weight:700;color:#1a5a1a}
+.paper tr.saving td{background:#c8e8c8;color:#1a5a1a;font-weight:700}
+table{width:100%;border-collapse:collapse}
+
+/* RESPONSIVE */
+@media(max-width:580px){
+  .obj-grid{grid-template-columns:repeat(2,1fr)}
+  .inv-grid{grid-template-columns:1fr}
+  .code-row{flex-direction:column;align-items:flex-start}
+  .deco-box{padding:32px 20px}
+  .vict-box{padding:36px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── TIMER BAR ─────────────────────────────────────────── -->
+<div id="timerBar">
+  <div>
+    <div class="timer-label">Tiempo restante</div>
+    <div id="timerNum">30:00</div>
+  </div>
+  <div style="text-align:right">
+    <div class="timer-label">Investigador</div>
+    <div id="nameDisplay" style="color:var(--gold);font-size:.95rem;letter-spacing:1px"></div>
+  </div>
+</div>
+
+<!-- ── SCREEN: REGISTRO ──────────────────────────────────── -->
+<div id="s-reg" class="scr on">
+  <div class="deco-box" style="max-width:440px;width:100%;text-align:center">
+    <div style="font-size:2.8rem;margin-bottom:4px">🎰</div>
+    <div class="t-title" style="font-size:1.7rem;margin-bottom:4px">La Fórmula<br>Perdida</div>
+    <div class="t-sub" style="margin-bottom:30px">Un escape room de educación financiera</div>
+    <div class="divider"></div>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:24px;line-height:1.65">El vigilante de la bóveda ha desaparecido.<br>Tienes <strong style="color:var(--gold)">30 minutos</strong> para descubrir su secreto.</p>
+    <input type="text" id="nameInput" placeholder="Tu nombre, investigador…" maxlength="28" style="margin-bottom:4px">
+    <button class="btn btn-block" onclick="startGame()">Comenzar Investigación →</button>
+  </div>
+</div>
+
+<!-- ── SCREEN: INTRO ─────────────────────────────────────── -->
+<div id="s-intro" class="scr">
+  <div class="deco-box" style="max-width:640px;width:100%">
+    <div class="t-title" style="font-size:1.1rem;margin-bottom:20px">📋 El Caso</div>
+    <div class="t-prose" style="font-size:1rem">
+      <p style="margin-bottom:14px">Era lunes por la mañana cuando el <span class="gold">Casino Real</span> notó algo inusual: <strong>Don Aurelio, el vigilante de la bóveda, no había llegado al trabajo.</strong></p>
+      <p style="margin-bottom:14px">No se había llevado dinero. La bóveda estaba intacta. Sin embargo, los rumores corrían: había robado algo más valioso — <span class="gold">la fórmula para burlar a la banca.</span></p>
+      <p style="margin-bottom:14px">Un vecino le vio marcharse apresuradamente. En la puerta de su domicilio había dejado una nota:</p>
+      <div style="background:rgba(201,168,76,.07);border-left:3px solid var(--gold);padding:18px 20px;margin:16px 0;font-style:italic;font-size:1.05rem">
+        "Para crear lo nuevo, hay que destruir lo viejo."<br>
+        <small style="color:var(--muted);font-style:normal;font-size:.8rem">Fecha: HOY · Hora: 08:30</small>
+      </div>
+      <p>Quedan exactamente <strong style="color:var(--gold)">30 minutos</strong> para que se cumpla el tiempo. ¿Qué pasará entonces? Nadie lo sabe. <em>Tú tienes que descubrirlo.</em></p>
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-block" onclick="goPhase(1)">Entrar en el domicilio →</button>
+  </div>
+</div>
+
+<!-- ── SCREEN: FASE 1 ─────────────────────────────────────── -->
+<div id="s-1" class="scr">
+  <div class="phase-wrap">
+    <div class="progress" id="prog1">
+      <div class="pdot cur"></div><div class="pdot"></div><div class="pdot"></div><div class="pdot"></div>
+    </div>
+    <div class="phase-head">
+      <div class="phase-num">Fase I de IV</div>
+      <div class="phase-name">🚪 La Puerta del Domicilio</div>
+    </div>
+    <div class="scene">
+      <p class="scene-desc">Te encuentras ante la puerta de Don Aurelio. Hay una cerradura de combinación numérica de 4 dígitos. Varios objetos llaman tu atención…</p>
+      <div class="obj-grid">
+        <div class="obj" id="o-note" onclick="openModal('note')"><span class="icon">📝</span><span class="label">Nota en la puerta</span></div>
+        <div class="obj" id="o-mail" onclick="openModal('mail')"><span class="icon">📬</span><span class="label">Buzón</span></div>
+        <div class="obj" id="o-news" onclick="openModal('news')"><span class="icon">📰</span><span class="label">Periódico en el suelo</span></div>
+        <div class="obj" id="o-mat" onclick="openModal('mat')"><span class="icon">🪤</span><span class="label">Felpudo</span></div>
+      </div>
+    </div>
+    <div class="puzzle">
+      <div class="puzzle-title">🔐 Cerradura de la puerta</div>
+      <div class="puzzle-q">La cerradura pide un código de 4 dígitos. ¿En qué año empezó todo para Don Aurelio?</div>
+      <div class="code-row">
+        <input type="number" id="c1" placeholder="_ _ _ _" oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+        <button class="btn btn-sm" onclick="checkCode(1)">Probar</button>
+      </div>
+      <div class="err" id="e1">❌ Combinación incorrecta. Sigue investigando.</div>
+    </div>
+    <div class="hint-row">
+      <button class="btn btn-sm btn-danger" onclick="hint(1)">💡 Pista</button>
+      <span class="hint-count" id="hc1">3 disponibles</span>
+    </div>
+    <div class="hint-wrap" id="hints1"></div>
+  </div>
+</div>
+
+<!-- ── SCREEN: FASE 2 ─────────────────────────────────────── -->
+<div id="s-2" class="scr">
+  <div class="phase-wrap">
+    <div class="progress">
+      <div class="pdot done"></div><div class="pdot cur"></div><div class="pdot"></div><div class="pdot"></div>
+    </div>
+    <div class="phase-head">
+      <div class="phase-num">Fase II de IV</div>
+      <div class="phase-name">🛋️ El Salón</div>
+    </div>
+    <div class="scene">
+      <p class="scene-desc">El salón de Don Aurelio es ordenado, austero. Sobre la mesa hay documentos financieros. Un cuadro en la pared parece tener algo detrás. El cajón del escritorio está cerrado con código.</p>
+      <div class="obj-grid">
+        <div class="obj" id="o-budget" onclick="openModal('budget')"><span class="icon">📊</span><span class="label">Hoja de presupuesto</span></div>
+        <div class="obj" id="o-picture" onclick="openModal('picture')"><span class="icon">🖼️</span><span class="label">Cuadro en la pared</span></div>
+        <div class="obj" id="o-bank" onclick="openModal('bank')"><span class="icon">🏦</span><span class="label">Extracto bancario</span></div>
+        <div class="obj" id="o-piggy" onclick="openModal('piggy')"><span class="icon">🐷</span><span class="label">Hucha en el mueble</span></div>
+      </div>
+    </div>
+    <div class="puzzle">
+      <div class="puzzle-title">🔒 Cajón del escritorio</div>
+      <div class="puzzle-q">El cajón tiene un código de 3 dígitos. ¿Cuántos euros ahorraba Don Aurelio cada mes? (Revisa su presupuesto)</div>
+      <div class="code-row">
+        <input type="number" id="c2" placeholder="_ _ _" oninput="if(this.value.length>3)this.value=this.value.slice(0,3)">
+        <button class="btn btn-sm" onclick="checkCode(2)">Probar</button>
+      </div>
+      <div class="err" id="e2">❌ Incorrecto. Revisa el presupuesto con atención.</div>
+    </div>
+    <div class="hint-row">
+      <button class="btn btn-sm btn-danger" onclick="hint(2)">💡 Pista</button>
+      <span class="hint-count" id="hc2">3 disponibles</span>
+    </div>
+    <div class="hint-wrap" id="hints2"></div>
+  </div>
+</div>
+
+<!-- ── SCREEN: FASE 3 ─────────────────────────────────────── -->
+<div id="s-3" class="scr">
+  <div class="phase-wrap">
+    <div class="progress">
+      <div class="pdot done"></div><div class="pdot done"></div><div class="pdot cur"></div><div class="pdot"></div>
+    </div>
+    <div class="phase-head">
+      <div class="phase-num">Fase III de IV</div>
+      <div class="phase-name">📁 El Despacho</div>
+    </div>
+    <div class="scene">
+      <p class="scene-desc">El despacho huele a papel viejo y tabaco. Hay una caja fuerte empotrada en la pared. Sobre el escritorio: cuatro carpetas con información sobre productos financieros. Un post-it dice: <em>"Orden es poder. Conocer el riesgo es libertad."</em></p>
+      <p style="font-size:.82rem;color:var(--gold);margin-bottom:14px">► Lee cada carpeta con 📖. Luego selecciónalas <strong>de menor a mayor riesgo</strong> con ✓.</p>
+      <div class="inv-grid">
+        <div class="inv-card" id="ic-cuenta">
+          <div class="inv-name">📁 Cuenta Corriente</div>
+          <div class="inv-desc">Liquidez inmediata. Siempre disponible.</div>
+          <div class="inv-code">Código: 3</div>
+          <div class="inv-btns">
+            <button onclick="readInv('cuenta')">📖 Leer</button>
+            <button onclick="selectInv('cuenta')">✓ Ordenar</button>
+          </div>
+        </div>
+        <div class="inv-card" id="ic-fondo">
+          <div class="inv-name">📁 Fondo Indexado</div>
+          <div class="inv-desc">Replica el mercado global. 7-10% histórico.</div>
+          <div class="inv-code">Código: 4</div>
+          <div class="inv-btns">
+            <button onclick="readInv('fondo')">📖 Leer</button>
+            <button onclick="selectInv('fondo')">✓ Ordenar</button>
+          </div>
+        </div>
+        <div class="inv-card" id="ic-deposito">
+          <div class="inv-name">📁 Depósito a Plazo</div>
+          <div class="inv-desc">Capital garantizado. Tipo fijo pactado.</div>
+          <div class="inv-code">Código: 7</div>
+          <div class="inv-btns">
+            <button onclick="readInv('deposito')">📖 Leer</button>
+            <button onclick="selectInv('deposito')">✓ Ordenar</button>
+          </div>
+        </div>
+        <div class="inv-card" id="ic-acciones">
+          <div class="inv-name">📁 Acciones Individuales</div>
+          <div class="inv-desc">Alta rentabilidad potencial. Volatilidad extrema.</div>
+          <div class="inv-code">Código: 2</div>
+          <div class="inv-btns">
+            <button onclick="readInv('acciones')">📖 Leer</button>
+            <button onclick="selectInv('acciones')">✓ Ordenar</button>
+          </div>
+        </div>
+      </div>
+      <div class="order-box">
+        <div class="order-label">Orden seleccionado</div>
+        <div id="orderDisp" style="color:var(--muted);font-size:.85rem">Aún no has seleccionado ningún producto…</div>
+      </div>
+    </div>
+    <div class="puzzle">
+      <div class="puzzle-title">🔒 Caja fuerte</div>
+      <div class="puzzle-q">Ordena los 4 productos de <strong>menor a mayor riesgo</strong>. Los "códigos" de cada uno, en ese orden, forman la combinación de 4 dígitos.</div>
+      <div class="code-row">
+        <input type="number" id="c3" placeholder="_ _ _ _" oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+        <button class="btn btn-sm" onclick="checkCode(3)">Probar</button>
+      </div>
+      <div class="err" id="e3">❌ Orden incorrecto. ¿Estás seguro del nivel de riesgo de cada producto?</div>
+    </div>
+    <div class="hint-row" style="gap:12px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-danger" onclick="hint(3)">💡 Pista</button>
+      <span class="hint-count" id="hc3">3 disponibles</span>
+      <button class="btn btn-sm btn-ghost" onclick="resetOrder()">↺ Reiniciar orden</button>
+    </div>
+    <div class="hint-wrap" id="hints3"></div>
+  </div>
+</div>
+
+<!-- ── SCREEN: FASE 4 ─────────────────────────────────────── -->
+<div id="s-4" class="scr">
+  <div class="phase-wrap">
+    <div class="progress">
+      <div class="pdot done"></div><div class="pdot done"></div><div class="pdot done"></div><div class="pdot cur"></div>
+    </div>
+    <div class="phase-head">
+      <div class="phase-num">Fase IV de IV</div>
+      <div class="phase-name">📔 El Diario Secreto</div>
+    </div>
+    <div class="scene">
+      <p class="scene-desc">En la caja fuerte había un viejo diario de tapas rojas. Está cerrado con un código numérico de 4 dígitos. Sobre el escritorio: una calculadora y una hoja con anotaciones matemáticas.</p>
+      <div class="obj-grid">
+        <div class="obj" id="o-diary" onclick="openModal('diary')"><span class="icon">📔</span><span class="label">Diario cerrado</span></div>
+        <div class="obj" id="o-fnotes" onclick="openModal('fnotes')"><span class="icon">🗒️</span><span class="label">Apuntes matemáticos</span></div>
+        <div class="obj" id="o-calc" onclick="openModal('calc')"><span class="icon">🧮</span><span class="label">Calculadora</span></div>
+        <div class="obj" id="o-photo" onclick="openModal('photo')"><span class="icon">📷</span><span class="label">Fotografía enmarcada</span></div>
+      </div>
+    </div>
+    <div class="puzzle">
+      <div class="puzzle-title">🔒 Código del diario</div>
+      <div class="puzzle-q">Don Aurelio invirtió <strong>1.000 €</strong> en enero de <strong>1992</strong> a un interés compuesto del <strong>7 % anual</strong>. En <strong>2022</strong> (30 años después) fue a ver cuánto tenía. ¿Cuál es el valor final redondeado al euro? Esa cifra abre el diario.</div>
+      <div class="code-row">
+        <input type="number" id="c4" placeholder="_ _ _ _" oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+        <button class="btn btn-sm" onclick="checkCode(4)">Probar</button>
+      </div>
+      <div class="err" id="e4">❌ Cálculo incorrecto. Usa la calculadora y la fórmula A = P × (1 + r)ⁿ</div>
+    </div>
+    <div class="hint-row">
+      <button class="btn btn-sm btn-danger" onclick="hint(4)">💡 Pista</button>
+      <span class="hint-count" id="hc4">3 disponibles</span>
+    </div>
+    <div class="hint-wrap" id="hints4"></div>
+  </div>
+</div>
+
+<!-- ── SCREEN: VICTORIA ──────────────────────────────────── -->
+<div id="s-win" class="scr">
+  <div class="vict-box">
+    <div style="font-size:3rem;margin-bottom:12px">🏆</div>
+    <div class="t-title" style="font-size:2rem;margin-bottom:6px">¡Lo Descubriste!</div>
+    <div class="divider"></div>
+    <div class="t-prose" style="font-style:italic;font-size:.95rem;line-height:1.85;margin:20px 0;color:var(--text)">
+      "Nunca robé nada. Sólo aprendí el secreto que los bancos conocen y nadie enseña. Guardé 350 € cada mes durante 30 años. Lo demás… lo hizo el <strong style="color:var(--gold)">tiempo.</strong>"
+      <br><small style="color:var(--muted);font-style:normal">— Don Aurelio, Carta de despedida</small>
+    </div>
+    <div class="formula-big">A = P × (1 + r)ⁿ</div>
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:18px">
+      A = capital final &nbsp;·&nbsp; P = capital inicial &nbsp;·&nbsp; r = tasa de interés &nbsp;·&nbsp; n = años
+    </div>
+    <div class="divider"></div>
+    <div class="result-card">
+      <div class="result-row"><span class="rl">JUGADOR</span><span class="rv" id="w-name">—</span></div>
+      <div class="result-row"><span class="rl">TIEMPO TRANSCURRIDO</span><span class="rv" id="w-time">—</span></div>
+      <div class="result-row"><span class="rl">CASO</span><span class="rv" style="color:#88cc88">✓ RESUELTO</span></div>
+    </div>
+    <button class="btn btn-block" onclick="restart()">Jugar de nuevo</button>
+  </div>
+</div>
+
+<!-- ── SCREEN: GAME OVER ─────────────────────────────────── -->
+<div id="s-go" class="scr">
+  <div class="go-box">
+    <div style="font-size:3.5rem;margin-bottom:14px">⏳</div>
+    <div class="t-title" style="font-size:1.7rem;color:#e87878;margin-bottom:16px">El tiempo<br>se ha agotado</div>
+    <div class="divider" style="background:linear-gradient(90deg,transparent,var(--burg),transparent)"></div>
+    <p class="t-prose" style="font-style:italic;font-size:1.1rem;line-height:1.9;margin:24px 0;color:var(--text)">
+      Ya no sabremos lo que pasó.<br>
+      <span style="color:var(--muted)">¿O sí?</span>
+    </p>
+    <button class="btn btn-block btn-danger" onclick="restart()">Inténtalo de nuevo</button>
+  </div>
+</div>
+
+<!-- ── MODAL ──────────────────────────────────────────────── -->
+<div id="modal" class="modal" onclick="mBg(event)">
+  <div class="modal-box">
+    <button class="modal-x" onclick="closeM()">✕</button>
+    <div class="modal-title" id="mTitle"></div>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+const G = {
+  name:'', phase:0,
+  hintsLeft:{1:3,2:3,3:3,4:3},
+  inv:{order:[],correct:['cuenta','deposito','fondo','acciones'],codes:{cuenta:'3',deposito:'7',fondo:'4',acciones:'2'}},
+  seen:new Set()
+};
+const CODES = {1:'1992',2:'350',3:'3742',4:'7612'};
+const HINTS = {
+  1:['La nota menciona "30 años". Don Aurelio lleva mucho tiempo en el Casino Real. ¿Desde cuándo?',
+     'El buzón contiene algo de su primer día de trabajo. El periódico del suelo también revela información del Casino.',
+     'El Casino Real fundó sus puertas en 1992. Ese mismo año, Don Aurelio firmó su primer contrato. Ese es el código.'],
+  2:['Abre la hoja de presupuesto. Suma todos los gastos mensuales y réstalos a los ingresos totales.',
+     'Ingresos: 2.000 €. Suma todos los gastos: alquiler + supermercado + transporte + seguros + ocio + suscripciones + ropa.',
+     'Total de gastos: 1.650 €. El ahorro mensual = 2.000 − 1.650 = 350 €. Ese es el código.'],
+  3:['Piensa qué producto tiene menos riesgo para tu dinero: ¿dónde puedes perder menos? Empieza por ahí.',
+     'De menor a mayor riesgo: empieza donde el capital está garantizado y no hay volatilidad; termina donde puede desaparecer todo.',
+     'Orden correcto: Cuenta Corriente → Depósito a Plazo → Fondo Indexado → Acciones. Sus códigos en ese orden: 3, 7, 4, 2 → 3742.'],
+  4:['La fórmula del interés compuesto es A = P × (1 + r)ⁿ. Identifica cada variable con los datos del problema.',
+     'P = 1.000, r = 0,07 (es decir, 7 % en decimal), n = 30. Calcula primero (1,07)^30 con la calculadora.',
+     '(1,07)^30 ≈ 7,612. Multiplica por 1.000 y redondea: 7.612 €. Ese es el código del diario.']
+};
+
+/* ═══════════════════════════════════════════════════════════
+   TIMER
+═══════════════════════════════════════════════════════════ */
+let tLeft=30*60, tElapsed=0, tId=null;
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function startTimer(){
+  document.getElementById('timerBar').classList.add('on');
+  tId=setInterval(()=>{
+    tLeft--; tElapsed++;
+    const el=document.getElementById('timerNum');
+    el.textContent=fmt(tLeft);
+    if(tLeft<=300) el.classList.add('urgent');
+    if(tLeft<=0){clearInterval(tId);show('s-go');}
+  },1000);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════════════════════ */
+function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');window.scrollTo(0,0);}
+function startGame(){
+  const n=document.getElementById('nameInput').value.trim();
+  if(!n){alert('Por favor, introduce tu nombre.');return;}
+  G.name=n;
+  document.getElementById('nameDisplay').textContent=n.toUpperCase();
+  show('s-intro');
+}
+function goPhase(n){
+  G.phase=n;
+  if(n===1) startTimer();
+  show('s-'+n);
+}
+function restart(){
+  clearInterval(tId); tLeft=30*60; tElapsed=0; tId=null;
+  G.hintsLeft={1:3,2:3,3:3,4:3}; G.seen=new Set(); G.inv.order=[];
+  [1,2,3,4].forEach(i=>{
+    const c=document.getElementById('c'+i); if(c){c.value='';c.className='';}
+    const e=document.getElementById('e'+i); if(e) e.style.display='none';
+    const h=document.getElementById('hints'+i); if(h) h.innerHTML='';
+    const hc=document.getElementById('hc'+i); if(hc) hc.textContent='3 disponibles';
+  });
+  document.querySelectorAll('.obj').forEach(o=>o.classList.remove('seen'));
+  document.querySelectorAll('.inv-card').forEach(c=>c.classList.remove('sel-ok','sel-bad'));
+  document.getElementById('orderDisp').textContent='Aún no has seleccionado ningún producto…';
+  document.getElementById('timerNum').textContent='30:00';
+  document.getElementById('timerNum').classList.remove('urgent');
+  document.getElementById('timerBar').classList.remove('on');
+  show('s-reg');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CODE CHECK
+═══════════════════════════════════════════════════════════ */
+function checkCode(n){
+  const inp=document.getElementById('c'+n);
+  const err=document.getElementById('e'+n);
+  if(inp.value.trim()===CODES[n]){
+    err.style.display='none'; inp.className='ok';
+    setTimeout(()=>{ if(n<4) goPhase(n+1); else winGame(); },700);
+  } else {
+    err.style.display='block'; inp.className='bad';
+    setTimeout(()=>inp.className='',500);
+  }
+}
+function winGame(){
+  clearInterval(tId);
+  document.getElementById('timerBar').classList.remove('on');
+  document.getElementById('w-name').textContent=G.name.toUpperCase();
+  document.getElementById('w-time').textContent=fmt(tElapsed);
+  show('s-win');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HINTS
+═══════════════════════════════════════════════════════════ */
+function hint(n){
+  if(G.hintsLeft[n]<=0) return;
+  const idx=3-G.hintsLeft[n];
+  G.hintsLeft[n]--;
+  const box=document.getElementById('hints'+n);
+  const d=document.createElement('div'); d.className='hint-item';
+  d.innerHTML=`💡 <strong>Pista ${idx+1}:</strong> ${HINTS[n][idx]}`;
+  box.appendChild(d);
+  const r=G.hintsLeft[n];
+  document.getElementById('hc'+n).textContent=r>0?`${r} disponible${r===1?'':'s'}`:'Sin más pistas';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL SYSTEM
+═══════════════════════════════════════════════════════════ */
+function openModal(key){
+  const data=MODAL_DATA[key];
+  if(!data) return;
+  document.getElementById('mTitle').textContent=data.title;
+  document.getElementById('mBody').innerHTML=data.html;
+  document.getElementById('modal').classList.add('on');
+  // Mark object as seen
+  const objMap={note:'o-note',mail:'o-mail',news:'o-news',mat:'o-mat',budget:'o-budget',picture:'o-picture',bank:'o-bank',piggy:'o-piggy',diary:'o-diary',fnotes:'o-fnotes',calc:'o-calc',photo:'o-photo'};
+  if(objMap[key]){const el=document.getElementById(objMap[key]);if(el)el.classList.add('seen');}
+  // Init calc if needed
+  if(key==='calc') setTimeout(calcInit,50);
+  // Init note flip state
+  if(key==='note') noteFlipped=false;
+  if(key==='picture') picFlipped=false;
+}
+function closeM(){document.getElementById('modal').classList.remove('on');}
+function mBg(e){if(e.target===document.getElementById('modal'))closeM();}
+
+/* ═══════════════════════════════════════════════════════════
+   FLIP ANIMATIONS
+═══════════════════════════════════════════════════════════ */
+let noteFlipped=false;
+function flipNote(){
+  noteFlipped=!noteFlipped;
+  const el=document.getElementById('noteInner');
+  if(el) el.classList.toggle('flipped',noteFlipped);
+}
+let picFlipped=false;
+function flipPic(){
+  picFlipped=!picFlipped;
+  const el=document.getElementById('picInner');
+  if(el) el.classList.toggle('flipped',picFlipped);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL CONTENT DATA
+═══════════════════════════════════════════════════════════ */
+const MODAL_DATA = {
+  note:{
+    title:'📝 Nota pegada en la puerta',
+    html:`<div class="flip-host" onclick="flipNote()" title="Haz clic para girar">
+      <div class="flip-inner" id="noteInner" style="min-height:200px">
+        <div class="flip-face" style="background:#f5ead0;color:#1a0a00;padding:24px;border:2px solid #c9a84c;font-family:'Playfair Display',serif;line-height:1.8;text-align:center">
+          <div style="font-size:.6rem;letter-spacing:3px;color:#8a6a30;margin-bottom:12px">◈ ANVERSO ◈</div>
+          <p style="font-style:italic;font-size:1.05rem;margin-bottom:14px">"Para crear lo nuevo,<br>hay que destruir lo viejo."</p>
+          <p style="font-size:.8rem;color:#6a4a20">📅 Fecha: HOY · 🕐 08:30</p>
+          <p style="font-size:.7rem;color:#8a6a50;margin-top:16px">🔄 Toca para girar la nota</p>
+        </div>
+        <div class="flip-face flip-back" style="background:#ece0c0;color:#2a1a0a;padding:24px;border:2px solid #c9a84c;font-family:'Courier Prime',monospace;line-height:1.8;position:absolute;top:0;left:0;right:0;bottom:0">
+          <div style="font-size:.6rem;letter-spacing:3px;color:#8a6a30;margin-bottom:12px;font-family:'Cinzel',serif">◈ REVERSO ◈</div>
+          <p style="font-size:.88rem;color:#3a2a0a;line-height:1.85">Llevo <strong>30 años</strong> guardando<br>este secreto.<br><br>Todo empezó cuando firmé<br>mi primer contrato.<br><br><em style="color:#6a4a20">"El tiempo es el único activo<br>que no se puede comprar."</em></p>
+        </div>
+      </div>
+    </div>`
+  },
+  mail:{
+    title:'📬 Buzón de Don Aurelio',
+    html:`<div style="background:#1a1a0a;border:1px solid var(--gold);padding:20px">
+      <div class="paper paper-mono">
+        <div style="text-align:center;margin-bottom:12px">
+          <div style="font-size:.65rem;letter-spacing:3px;color:#8a5a20">CASINO REAL · NÓMINA Nº 1</div>
+        </div>
+        <hr style="border-color:#c9a84c;margin:8px 0">
+        <table style="font-size:.85rem;border-collapse:collapse;width:100%">
+          <tr><td style="padding:4px 0;color:#3a2a0a">Empleado:</td><td style="text-align:right;color:#1a0a00">Aurelio García Moreno</td></tr>
+          <tr><td style="padding:4px 0;color:#3a2a0a">Cargo:</td><td style="text-align:right;color:#1a0a00">Vigilante de Bóveda</td></tr>
+          <tr><td style="padding:4px 0;color:#3a2a0a">Fecha inicio:</td><td style="text-align:right;font-weight:700;color:#5a3000">Enero de 1992</td></tr>
+          <tr><td style="padding:4px 0;color:#3a2a0a">Sueldo bruto:</td><td style="text-align:right;color:#1a0a00">98.000 ptas.</td></tr>
+        </table>
+        <hr style="border-color:#c9a84c;margin:8px 0">
+        <p style="font-size:.7rem;color:#6a4a20;font-style:italic">"El primer paso de mil millas."</p>
+      </div>
+    </div>`
+  },
+  news:{
+    title:'📰 El Diario Financiero',
+    html:`<div class="paper" style="font-size:.88rem">
+      <div style="text-align:center;border-bottom:2px solid #2a1a0a;padding-bottom:10px;margin-bottom:14px">
+        <div style="font-size:.6rem;letter-spacing:4px;color:#6a4a20">EL DIARIO FINANCIERO</div>
+        <div style="font-size:1.15rem;font-weight:700;margin-top:4px;font-family:'Playfair Display',serif">CASINO REAL CELEBRA<br>SU 30.º ANIVERSARIO</div>
+        <div style="font-size:.68rem;color:#6a4a20;margin-top:4px">Edición especial · Año 2022</div>
+      </div>
+      <p style="line-height:1.7;color:#2a1a0a">El Casino Real, <strong>fundado en enero de 1992</strong>, celebra tres décadas de historia en nuestra ciudad. Sus primeros empleados recuerdan con nostalgia aquellos años de inicio…</p>
+      <p style="font-size:.82rem;color:#4a3a20;margin-top:10px;font-style:italic;line-height:1.65">"Algunos de los que empezaron con nosotros en <strong>1992</strong> ya se han retirado con una situación económica envidiable. Otros siguen aquí, fieles desde el primer día."</p>
+    </div>`
+  },
+  mat:{
+    title:'🪤 Debajo del felpudo',
+    html:`<div style="background:#1a0a00;padding:24px;text-align:center">
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px;font-style:italic">[Levantas el felpudo desgastado…]</p>
+      <div style="background:rgba(201,168,76,.06);border:1px dashed var(--gold);padding:18px;font-family:'Playfair Display',serif">
+        <p style="color:var(--gold-l);font-style:italic;line-height:1.85">"No busques la clave en el dinero.<br>Búscala en el <strong>tiempo</strong>.<br><br>Mi contraseña siempre ha sido<br>el año en que todo empezó."</p>
+      </div>
+      <p style="color:var(--muted);font-size:.72rem;margin-top:12px">— Post-it pegado en la parte inferior del felpudo</p>
+    </div>`
+  },
+  budget:{
+    title:'📊 Hoja de Presupuesto Mensual',
+    html:`<div class="paper paper-mono">
+      <div style="text-align:center;margin-bottom:14px">
+        <div style="font-size:.62rem;letter-spacing:3px;color:#6a4a20;font-family:'Cinzel',serif">PRESUPUESTO PERSONAL — A. GARCÍA</div>
+        <div style="font-size:.68rem;color:#8a6a40">Revisado: Diciembre 2021</div>
+      </div>
+      <table>
+        <tr><th colspan="2">INGRESOS</th></tr>
+        <tr><td>Nómina mensual</td><td style="text-align:right">2.000 €</td></tr>
+        <tr class="total"><td>TOTAL INGRESOS</td><td style="text-align:right">2.000 €</td></tr>
+        <tr><th colspan="2" style="margin-top:8px">GASTOS MENSUALES</th></tr>
+        <tr><td>Alquiler</td><td style="text-align:right">850 €</td></tr>
+        <tr><td>Supermercado</td><td style="text-align:right">300 €</td></tr>
+        <tr><td>Transporte</td><td style="text-align:right">150 €</td></tr>
+        <tr><td>Seguros</td><td style="text-align:right">100 €</td></tr>
+        <tr><td>Ocio / Restaurantes</td><td style="text-align:right">150 €</td></tr>
+        <tr><td>Suscripciones</td><td style="text-align:right">50 €</td></tr>
+        <tr><td>Ropa / Varios</td><td style="text-align:right">50 €</td></tr>
+        <tr class="total"><td>TOTAL GASTOS</td><td style="text-align:right">1.650 €</td></tr>
+        <tr class="saving"><td>💰 AHORRO MENSUAL</td><td style="text-align:right;font-size:1rem">??? €</td></tr>
+      </table>
+    </div>`
+  },
+  picture:{
+    title:'🖼️ Cuadro en la pared',
+    html:`<div class="flip-host" onclick="flipPic()" title="Haz clic para girar">
+      <div class="flip-inner" id="picInner" style="min-height:220px">
+        <div class="flip-face" style="background:#1a1a0a;border:3px solid var(--gold);padding:28px;text-align:center">
+          <div style="font-size:2.2rem;margin-bottom:12px">📈</div>
+          <p style="font-family:'Playfair Display',serif;font-style:italic;color:var(--gold-l);font-size:1.05rem;line-height:1.85">"El tiempo en el mercado<br>siempre gana al<br>tiempo del mercado."</p>
+          <p style="font-size:.72rem;color:var(--muted);margin-top:12px">— Warren Buffett</p>
+          <p style="font-size:.68rem;color:var(--muted);margin-top:16px">🔄 Toca para girar</p>
+        </div>
+        <div class="flip-face flip-back" style="background:#0a0a12;border:1px dashed var(--gold);padding:28px;text-align:center;position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center">
+          <div>
+            <p style="font-size:.7rem;letter-spacing:2px;color:var(--muted);margin-bottom:12px;font-family:'Cinzel',serif">NOTA ESCRITA AL DORSO</p>
+            <p style="font-family:'Courier Prime',monospace;font-size:.87rem;color:var(--cream);line-height:1.85">"Empecé el año en que<br>entré al Casino.<br>Ese año es mi clave.<br>Nunca la olvidaré."</p>
+          </div>
+        </div>
+      </div>
+    </div>`
+  },
+  bank:{
+    title:'🏦 Extracto Bancario',
+    html:`<div class="paper paper-mono" style="font-size:.82rem">
+      <div style="text-align:center;margin-bottom:12px">
+        <strong>BANCO NACIONAL · EXTRACTO</strong><br>
+        <span style="color:#6a4a20;font-size:.72rem">Cta: ****4892 — Diciembre 2021</span>
+      </div>
+      <table>
+        <tr><th>Fecha</th><th>Concepto</th><th style="text-align:right">Importe</th></tr>
+        <tr><td>01/12</td><td>Nómina Casino Real</td><td style="text-align:right;color:green">+2.000€</td></tr>
+        <tr><td>02/12</td><td>Alquiler</td><td style="text-align:right;color:#8b1a1a">−850€</td></tr>
+        <tr><td>05/12</td><td>Supermercado</td><td style="text-align:right;color:#8b1a1a">−300€</td></tr>
+        <tr><td>10/12</td><td>Transp. + Seguros</td><td style="text-align:right;color:#8b1a1a">−250€</td></tr>
+        <tr><td>15/12</td><td>Ocio / Varios</td><td style="text-align:right;color:#8b1a1a">−250€</td></tr>
+        <tr style="background:#c8e8c8"><td>28/12</td><td><strong>FONDO INVERSIÓN (auto)</strong></td><td style="text-align:right;color:#1a5a1a;font-weight:700">−350€</td></tr>
+      </table>
+      <p style="font-size:.68rem;color:#6a4a20;margin-top:10px;font-style:italic">* Transferencia automática programada desde Enero 1992</p>
+    </div>`
+  },
+  piggy:{
+    title:'🐷 La hucha',
+    html:`<div style="text-align:center;padding:24px">
+      <div style="font-size:4rem;margin-bottom:14px">🐷</div>
+      <p class="t-prose" style="font-style:italic;margin-bottom:16px;font-size:.9rem">La hucha está completamente vacía. Tiene una etiqueta de cartón pegada:</p>
+      <div style="background:rgba(201,168,76,.05);border:1px solid var(--border);padding:16px;font-size:.85rem;line-height:1.8;color:var(--cream)">
+        "Las huchas son para los niños.<br>Los adultos usan el <strong style="color:var(--gold)">interés compuesto</strong>.<br><br>
+        <em>No ahorres lo que sobra después de gastar.<br>Gasta lo que sobra después de ahorrar.</em><br><br>
+        <small style="color:var(--muted)">— W. Buffett</small>"
+      </div>
+    </div>`
+  },
+  diary:{
+    title:'📔 El diario de Don Aurelio',
+    html:`<div class="paper" style="font-size:.9rem;line-height:1.8">
+      <div style="text-align:center;margin-bottom:12px;font-size:.62rem;letter-spacing:3px;color:#6a4a20">DIARIO PERSONAL · PRIMERA PÁGINA VISIBLE</div>
+      <p><em>Enero de 1992.</em></p>
+      <p style="margin-top:10px">Hoy empecé en el Casino Real. Primer sueldo: 98.000 pesetas. He tomado una decisión que espero no olvidar jamás: guardaré una parte fija cada mes, sin tocarla. Pase lo que pase.</p>
+      <p style="margin-top:10px">He puesto 1.000 pesetas en un fondo de inversión. Bueno, 1.000 euros cuando lleguen, que llegarán.</p>
+      <p style="margin-top:10px;color:#6a4a20;font-style:italic">[El resto del diario está cerrado con llave. La cerradura pide 4 dígitos.]</p>
+      <p style="margin-top:14px;font-size:.8rem;color:#5a3a10">En la contratapa se lee: <strong>"La clave es lo que el tiempo hizo con mis primeros 1.000€."</strong></p>
+    </div>`
+  },
+  fnotes:{
+    title:'🗒️ Apuntes matemáticos',
+    html:`<div class="paper paper-mono" style="font-size:.88rem">
+      <div style="text-align:center;margin-bottom:14px;font-size:.62rem;letter-spacing:3px;color:#6a4a20;font-family:'Cinzel',serif">NOTAS ESCRITAS A MANO</div>
+      <div style="background:#fffde0;border:1px solid #c9a84c;padding:16px;line-height:2">
+        <p style="font-weight:700;color:#3a2000;font-size:.9rem">FÓRMULA DEL INTERÉS COMPUESTO:</p>
+        <p style="font-size:1.3rem;text-align:center;margin:10px 0;letter-spacing:2px;color:#1a0a00"><strong>A = P × (1 + r)ⁿ</strong></p>
+        <p style="font-size:.78rem;color:#4a3000">A = Capital final (lo que tendré)<br>P = Capital inicial (lo que puse)<br>r = Tasa interés anual en decimal<br>n = Número de años</p>
+        <hr style="border-color:#c9a84c;margin:10px 0">
+        <p style="font-size:.78rem;color:#6a4000;font-style:italic">Mi caso: P = 1.000, r = 0,07, n = 30<br>¿Cuánto es A?</p>
+      </div>
+    </div>`
+  },
+  calc:{
+    title:'🧮 Calculadora científica',
+    html:`<div class="calc-wrap">
+      <div class="calc-screen" id="cDisp">0</div>
+      <div class="calc-grid">
+        <button class="cbt cl" onclick="cp('C')">C</button>
+        <button class="cbt op" onclick="cp('(')">(</button>
+        <button class="cbt op" onclick="cp(')')">)</button>
+        <button class="cbt op" onclick="cp('^')">xʸ</button>
+        <button class="cbt" onclick="cp('7')">7</button>
+        <button class="cbt" onclick="cp('8')">8</button>
+        <button class="cbt" onclick="cp('9')">9</button>
+        <button class="cbt op" onclick="cp('/')">÷</button>
+        <button class="cbt" onclick="cp('4')">4</button>
+        <button class="cbt" onclick="cp('5')">5</button>
+        <button class="cbt" onclick="cp('6')">6</button>
+        <button class="cbt op" onclick="cp('*')">×</button>
+        <button class="cbt" onclick="cp('1')">1</button>
+        <button class="cbt" onclick="cp('2')">2</button>
+        <button class="cbt" onclick="cp('3')">3</button>
+        <button class="cbt op" onclick="cp('-')">−</button>
+        <button class="cbt" onclick="cp('0')">0</button>
+        <button class="cbt" onclick="cp('.')">.</button>
+        <button class="cbt eq" onclick="cp('=')">=</button>
+        <button class="cbt op" onclick="cp('+')">+</button>
+      </div>
+      <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:8px">Usa xʸ para potencias: ej. 1.07 xʸ 30</p>
+    </div>`
+  },
+  photo:{
+    title:'📷 Fotografía enmarcada',
+    html:`<div style="text-align:center;padding:20px">
+      <div style="background:#1a0a00;border:4px solid #8a6a40;display:inline-block;padding:12px;margin-bottom:14px">
+        <div style="width:180px;height:130px;background:linear-gradient(135deg,#1a1a28,#281a10);display:flex;align-items:center;justify-content:center;font-size:3.5rem">👨‍💼</div>
+      </div>
+      <p style="color:var(--muted);font-size:.78rem;margin-bottom:10px">Al dorso de la fotografía:</p>
+      <div style="background:rgba(201,168,76,.05);border:1px solid var(--border);padding:16px;font-size:.85rem;color:var(--cream);line-height:1.8">
+        "Aurelio García, 1992. Primer día.<br>
+        Puse 1.000 € en un fondo indexado ese mismo año.<br>
+        Prometí no mirarlo hasta jubilarme.<br>
+        30 años después… ¿cuánto habrá?"
+      </div>
+    </div>`
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════
+   PHASE 3 — INVESTMENT ORDER
+═══════════════════════════════════════════════════════════ */
+const INV_INFO = {
+  cuenta:{
+    title:'📁 Cuenta Corriente / de Ahorro',
+    html:`<div style="padding:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:.82rem">CUENTA CORRIENTE</span>
+        <span style="background:rgba(76,175,80,.1);border:1px solid rgba(76,175,80,.3);padding:2px 8px;font-size:.68rem;color:#88cc88">MUY BAJO RIESGO</span>
+      </div>
+      <p style="font-size:.85rem;line-height:1.7;color:var(--text);margin-bottom:12px">Producto básico bancario. Tu dinero siempre disponible. Capital garantizado por el Fondo de Garantía de Depósitos hasta 100.000 €.</p>
+      <div style="background:rgba(0,0,0,.2);padding:12px;font-size:.8rem;border:1px solid var(--border)">
+        <div>Rentabilidad media: <span style="color:var(--cream)">0,1 – 0,3 % anual</span></div>
+        <div>Riesgo de pérdida: <span style="color:#88cc88">Prácticamente nulo</span></div>
+        <div style="margin-top:6px;color:var(--gold);font-family:'Courier Prime'">Código de riesgo: <strong>3</strong></div>
+      </div>
+    </div>`
+  },
+  deposito:{
+    title:'📁 Depósito a Plazo Fijo',
+    html:`<div style="padding:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:.82rem">DEPÓSITO A PLAZO</span>
+        <span style="background:rgba(150,200,80,.1);border:1px solid rgba(150,200,80,.3);padding:2px 8px;font-size:.68rem;color:#c0e890">BAJO RIESGO</span>
+      </div>
+      <p style="font-size:.85rem;line-height:1.7;color:var(--text);margin-bottom:12px">Inmovilizas el capital durante un plazo acordado a cambio de un tipo de interés fijo. Capital garantizado. Sin volatilidad, sin sorpresas.</p>
+      <div style="background:rgba(0,0,0,.2);padding:12px;font-size:.8rem;border:1px solid var(--border)">
+        <div>Rentabilidad media: <span style="color:var(--cream)">1 – 3 % anual (TAE)</span></div>
+        <div>Riesgo de pérdida: <span style="color:#c0e890">Muy bajo (capital garantizado)</span></div>
+        <div style="margin-top:6px;color:var(--gold);font-family:'Courier Prime'">Código de riesgo: <strong>7</strong></div>
+      </div>
+    </div>`
+  },
+  fondo:{
+    title:'📁 Fondo de Inversión Indexado',
+    html:`<div style="padding:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:.82rem">FONDO INDEXADO</span>
+        <span style="background:rgba(255,193,7,.1);border:1px solid rgba(255,193,7,.3);padding:2px 8px;font-size:.68rem;color:#ffd54f">RIESGO MEDIO</span>
+      </div>
+      <p style="font-size:.85rem;line-height:1.7;color:var(--text);margin-bottom:12px">Replica un índice bursátil global (S&P 500, MSCI World…). Diversificación automática. Rentabilidad históricamente positiva a largo plazo, pero con fluctuaciones anuales.</p>
+      <div style="background:rgba(0,0,0,.2);padding:12px;font-size:.8rem;border:1px solid var(--border)">
+        <div>Rentabilidad histórica: <span style="color:var(--cream)">7 – 10 % anual (largo plazo)</span></div>
+        <div>Riesgo de pérdida: <span style="color:#ffd54f">Moderado a corto plazo</span></div>
+        <div style="margin-top:6px;color:var(--gold);font-family:'Courier Prime'">Código de riesgo: <strong>4</strong></div>
+      </div>
+    </div>`
+  },
+  acciones:{
+    title:'📁 Acciones Individuales',
+    html:`<div style="padding:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:.82rem">ACCIONES INDIVIDUALES</span>
+        <span style="background:rgba(244,67,54,.1);border:1px solid rgba(244,67,54,.3);padding:2px 8px;font-size:.68rem;color:#ef9a9a">ALTO RIESGO</span>
+      </div>
+      <p style="font-size:.85rem;line-height:1.7;color:var(--text);margin-bottom:12px">Compras participaciones de una empresa concreta. Si prospera, ganas. Si quiebra, puedes perder todo el capital invertido en ella. Volatilidad extrema.</p>
+      <div style="background:rgba(0,0,0,.2);padding:12px;font-size:.8rem;border:1px solid var(--border)">
+        <div>Rentabilidad: <span style="color:var(--cream)">Ilimitada (y pérdida total posible)</span></div>
+        <div>Riesgo de pérdida: <span style="color:#ef9a9a">Alto — Sin garantías</span></div>
+        <div style="margin-top:6px;color:var(--gold);font-family:'Courier Prime'">Código de riesgo: <strong>2</strong></div>
+      </div>
+    </div>`
+  }
+};
+
+function readInv(id){
+  const d=INV_INFO[id];
+  document.getElementById('mTitle').textContent=d.title;
+  document.getElementById('mBody').innerHTML=d.html;
+  document.getElementById('modal').classList.add('on');
+}
+
+function selectInv(id){
+  const inv=G.inv;
+  if(inv.order.includes(id)){
+    // Deselect
+    inv.order=inv.order.filter(x=>x!==id);
+    document.getElementById('ic-'+id).classList.remove('sel-ok','sel-bad');
+    updateOrder();
+    return;
+  }
+  if(inv.order.length>=4) return;
+  const pos=inv.order.length;
+  inv.order.push(id);
+  const card=document.getElementById('ic-'+id);
+  if(inv.correct[pos]===id){
+    card.classList.add('sel-ok');
+    updateOrder();
+  } else {
+    card.classList.add('sel-bad');
+    setTimeout(resetOrder,700);
+  }
+}
+
+function updateOrder(){
+  const inv=G.inv;
+  const names={cuenta:'Cuenta',deposito:'Depósito',fondo:'Fondo',acciones:'Acciones'};
+  const disp=document.getElementById('orderDisp');
+  if(!inv.order.length){disp.textContent='Aún no has seleccionado ningún producto…';return;}
+  let html=inv.order.map((id,i)=>`<span style="color:var(--cream)">${i+1}. ${names[id]}</span> <span style="color:var(--gold-d)">(cód: ${inv.codes[id]})</span>`).join('<br>');
+  if(inv.order.length===4){
+    const code=inv.order.map(id=>inv.codes[id]).join('');
+    html+=`<br><br><span style="color:var(--gold-l)">✓ Código generado: <strong style="font-size:1.1rem">${code}</strong></span>`;
+    document.getElementById('c3').value=code;
+  }
+  disp.innerHTML=html;
+}
+
+function resetOrder(){
+  G.inv.order=[];
+  document.querySelectorAll('.inv-card').forEach(c=>c.classList.remove('sel-ok','sel-bad'));
+  updateOrder();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CALCULATOR
+═══════════════════════════════════════════════════════════ */
+let cExpr='';
+function calcInit(){cExpr='';updCalc();}
+function cp(v){
+  if(v==='C'){cExpr='';updCalc();return;}
+  if(v==='='){
+    try{
+      const expr=cExpr.replace(/\^/g,'**');
+      const r=Function('"use strict";return('+expr+')')();
+      cExpr=parseFloat(r.toFixed(6)).toString();
+    }catch{cExpr='Error';}
+    updCalc();return;
+  }
+  cExpr+=v; updCalc();
+}
+function updCalc(){
+  const d=document.getElementById('cDisp');
+  if(d) d.textContent=cExpr||'0';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KEYBOARD
+═══════════════════════════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') closeM();
+  if(e.key==='Enter'&&G.phase>=1&&G.phase<=4) checkCode(G.phase);
+});
+</script>
+</body>
+</html>
